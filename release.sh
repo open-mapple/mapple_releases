@@ -37,6 +37,7 @@ projects="build/mapple vendor/mapple device/realme/spaced mapple/loader mapple/s
 
 pack() {
 	local out=$1 top=$2 tag=$3 rehearsal=${4:-} f r k
+	[ ! -d "$top/mapple/manager" ] || projects="$projects mapple/manager"	# the Mapple app, when the tree has it
 	[ -z "$rehearsal" ] || tag=$tag-rehearsal
 	for r in $projects; do
 		[ -z "$(git -C "$top/$r" status --porcelain --untracked-files=no)" ] || { echo "pack: $r has changes" >&2; exit 1; }
@@ -137,7 +138,7 @@ fi
 T=$W/tree BM=$W/tree/build/mapple
 rm -rf "$T" "$W/root"; mkdir -p "$T" "$W/root" "$O"
 tar -C "$T" -xf "$A/tools.tar"
-tar -C "$W/root" -xf "$A/root-overlay.tar"
+tar -C "$W/root" -xpf "$A/root-overlay.tar"	# -p: Mapple's helper keeps its set-user-ID bit
 
 echo "device tree and payload"
 python3 "$BM/tools/extract-dt.py" "$ipsw" "$W/d22ap.adt" >/dev/null
