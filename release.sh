@@ -1,12 +1,14 @@
 #!/bin/bash
-# Open Mapple for the realme 8i (spaced), put together on your Mac from this release's files and your own copy of
-# iOS 16.7.16 (20H392) for the iPhone X. Nothing of Apple's or the phone maker's is in the release: the iOS parts
-# are made here, for you only, and the zip reads the phone's firmware on the phone.
+# Open Mapple for the realme 8i (spaced), put together on your Mac from this release's files and iOS 16.7.16
+# (20H392) for the iPhone X. Nothing of Apple's or the phone maker's is in the release: the iOS parts are made here,
+# for you only, and the zip reads the phone's firmware on the phone.
 #
-#   ./release.sh IPSW [TOUCH_FW]
-#	IPSW      iPhone10,3,iPhone10,6_16.7.16_20H392_Restore.ipsw (its size and SHA-256 are checked)
-#	TOUCH_FW  (developers) FW_NF_ILI7807S_*.bin into the payload as well; normally the loader takes the copy the
-#	          zip puts in the tail area
+#   ./release.sh [--ipsw IPSW] [--touch-fw FW]
+#	Without --ipsw, iOS is downloaded from Apple's servers (6.2 GB, into work/): running this is your consent to
+#	that download. --ipsw: your own copy of iPhone10,3,iPhone10,6_16.7.16_20H392_Restore.ipsw. Either way its
+#	size and SHA-256 are checked.
+#	--touch-fw (developers): FW_NF_ILI7807S_*.bin into the payload as well; normally the loader takes the copy
+#	the zip puts in the tail area
 #   The release's files go in assets/ first: gh release download <tag> -D assets (or by hand from the release page).
 #   Needs python3, zip and GNU rsync (brew install rsync); building the root asks for sudo (it prints the command).
 #   Out: out/root.img (fastboot) and out/mapple-...-PERSONAL.zip (recovery). Then, phone in Android or recovery:
@@ -14,8 +16,13 @@
 #	in the recovery: adb sideload mapple-...-PERSONAL.zip (or from an SD card or OTG), then reboot
 #   Flashing the root erases Android's data.
 #
-#   ./release.sh pack OUT TOP TAG   (maintainers) assets/ and MANIFEST for TAG (spaced-1.0) from an mka build of
-#	mapple_spaced_single (OUT, its product directory) and the tree TOP
+#   The release is checked against its signature: MANIFEST.sig by the key in allowed_signers (ssh-keygen -Y).
+#
+#   Maintainers:
+#   ./release.sh pack OUT TOP TAG [--rehearsal]   assets/, assets/SHA256SUMS and MANIFEST for TAG (spaced-1.0) from an
+#	mka build of mapple_spaced_single (OUT, its product directory) of the tree TOP, every project clean and at its
+#	origin/main (--rehearsal: any commit, the tag marked as such)
+#   ./release.sh sign KEY   MANIFEST.sig with the release key (ssh-keygen asks for its passphrase)
 set -euo pipefail
 cd "$(dirname "$0")"
 H=$PWD A=$H/assets W=$H/work O=$H/out
@@ -24,8 +31,30 @@ field() { sed -n "s/^$1 //p" "$H/MANIFEST" | head -1; }
 conf() { sed -n "s/^	\{0,1\}$1	//p" "$2" | head -1; }
 sha() { shasum -a 256 "$1" | cut -d' ' -f1; }
 
+# every project an mka build of the single product reads (splitboot: its installer verbs go into mapple-install)
+projects="build/mapple vendor/mapple device/realme/spaced mapple/loader mapple/splitboot mapple/userland mapple/gpu/mali
+	kernel/mediatek/common kernel/mediatek/mt6781"
+
 pack() {
-	local out=$1 top=$2 tag=$3 f
+	local out=$1 top=$2 tag=$3 rehearsal=${4:-} f r k
+	[ -z "$rehearsal" ] || tag=$tag-rehearsal
+	for r in $projects; do
+		[ -z "$(git -C "$top/$r" status --porcelain --untracked-files=no)" ] || { echo "pack: $r has changes" >&2; exit 1; }
+		[ -n "$rehearsal" ] || [ "$(git -C "$top/$r" rev-parse HEAD)" = "$(git -C "$top/$r" rev-parse origin/main)" ] ||
+			{ echo "pack: $r is not at its origin/main" >&2; exit 1; }
+	done
+	k=$(python3 - "$out/single/xnup.bin" <<'EOF'
+import struct, sys
+d, p = open(sys.argv[1], 'rb').read(), 8
+while d[p:p + 16].strip(b'\0'):
+    name, size = struct.unpack_from('<16sI', d, p)
+    if name.rstrip(b'\0') == b'kernel.ver':
+        print(d[p + 24:p + 24 + size].rstrip(b'\0').decode())
+    p += 24 + (size + 15) // 16 * 16
+EOF
+)
+	[ "$k" = "mapple-$(conf soc "$top/device/realme/spaced/device.conf")-g$(git -C "$top/kernel/mediatek/common" rev-parse --short=8 HEAD)" ] ||
+		{ echo "pack: the kernel in $out ($k) is not common's HEAD: mka mapple again" >&2; exit 1; }
 	rm -rf "$A"; mkdir -p "$A"
 	cp "$out/kernel" "$out/shim.Image" "$out/single/mtkloader.bin" "$out/mapple-install" "$A/"
 	tar -C "$out/root" -cf "$A/root-overlay.tar" .
@@ -36,39 +65,66 @@ pack() {
 	{
 		echo "release $tag"
 		echo "ipsw $(conf ipsw_size "$top/vendor/mapple/config/common.conf") $(conf ipsw_sha256 "$top/vendor/mapple/config/common.conf")"
+		echo "ipsw_url $(conf ipsw_url "$top/vendor/mapple/config/common.conf")"
 		echo "cmdline $(cat "$out/single/cmdline")"
-		for k in adt payload_max root_size; do echo "$k $(conf $k "$top/device/realme/spaced/device.conf")"; done
-		python3 - "$out/xnup.bin" <<'EOF'
-import struct, sys
-d, p = open(sys.argv[1], 'rb').read(), 8
-while d[p:p + 16].strip(b'\0'):
-    name, size = struct.unpack_from('<16sI', d, p)
-    if name.rstrip(b'\0') == b'kernel.ver':
-        print('kver', d[p + 24:p + 24 + size].rstrip(b'\0').decode())
-    p += 24 + (size + 15) // 16 * 16
-EOF
-		for r in build/mapple vendor/mapple device/realme/spaced mapple/loader mapple/userland mapple/gpu/mali \
-			kernel/mediatek/common kernel/mediatek/mt6781; do
+		for f in adt payload_max root_size; do echo "$f $(conf $f "$top/device/realme/spaced/device.conf")"; done
+		echo "kver $k"
+		for r in $projects; do
 			echo "source $r $(git -C "$top/$r" rev-parse HEAD)"
 		done
 		for f in kernel shim.Image mtkloader.bin mapple-install root-overlay.tar tools.tar; do
 			echo "file $(sha "$A/$f") $(stat -f %z "$A/$f") $f"
 		done
 	} > "$H/MANIFEST"
+	sed -n 's/^file \([0-9a-f]*\) [0-9]* \(.*\)/\1  \2/p' "$H/MANIFEST" > "$A/SHA256SUMS"
+	rm -f "$H/MANIFEST.sig"
 	cat "$H/MANIFEST"
+	echo "Next: ./release.sh sign <the release key>; commit MANIFEST, MANIFEST.sig and notes/$tag.md; tag $tag;"
+	echo "gh release create $tag assets/* MANIFEST MANIFEST.sig --notes-file notes/$tag.md"
 }
 
-[ "${1:-}" != pack ] || { [ $# = 4 ] || { sed -n '2,20p' "$0"; exit 2; }; pack "$2" "$3" "$4"; exit; }
-[ $# = 1 ] || [ $# = 2 ] || { sed -n '2,20p' "$0"; exit 2; }
-ipsw=$(cd "$(dirname "$1")" && pwd)/$(basename "$1") fw=${2:-}
+sign() {
+	[ -f "$H/MANIFEST" ] || { echo "sign: no MANIFEST: pack first" >&2; exit 1; }
+	ssh-keygen -Y sign -f "$1" -n mapple-release "$H/MANIFEST"
+	echo "open-mapple-release namespaces=\"mapple-release\" $(cut -d' ' -f1,2 "$1.pub")" > "$H/allowed_signers.new"
+	if cmp -s "$H/allowed_signers.new" "$H/allowed_signers"; then rm "$H/allowed_signers.new"
+	else echo "allowed_signers.new: the key's line; commit it as allowed_signers if this is the release key"; fi
+}
+
+usage() { sed -n '2,28p' "$0"; exit 2; }
+case ${1:-} in
+pack) [ $# = 4 ] || { [ $# = 5 ] && [ "$5" = --rehearsal ]; } || usage; pack "$2" "$3" "$4" "${5:-}"; exit ;;
+sign) [ $# = 2 ] || usage; sign "$2"; exit ;;
+esac
+ipsw= fw=
+while [ $# -gt 0 ]; do
+	case $1 in
+	--ipsw) [ $# -ge 2 ] || usage; ipsw=$(cd "$(dirname "$2")" && pwd)/$(basename "$2"); shift 2 ;;
+	--touch-fw) [ $# -ge 2 ] || usage; fw=$2; shift 2 ;;
+	*) usage ;;
+	esac
+done
 [ -f "$H/MANIFEST" ] || { echo "no MANIFEST: this is not a release's checkout" >&2; exit 1; }
 
+[ -f "$H/MANIFEST.sig" ] && [ -f "$H/allowed_signers" ] || { echo "no MANIFEST.sig or allowed_signers: not a signed release" >&2; exit 1; }
+ssh-keygen -Y verify -f "$H/allowed_signers" -I open-mapple-release -n mapple-release -s "$H/MANIFEST.sig" \
+	< "$H/MANIFEST" >/dev/null || { echo "MANIFEST's signature does not check out" >&2; exit 1; }
 echo "checking assets/ against MANIFEST"
 sed -n 's/^file //p' "$H/MANIFEST" | while read -r sum size f; do
 	[ -f "$A/$f" ] && [ "$(stat -f %z "$A/$f")" = "$size" ] && [ "$(sha "$A/$f")" = "$sum" ] ||
 		{ echo "assets/$f is missing or not this release's" >&2; exit 1; }
 done
 read -r size sum <<< "$(field ipsw)"
+if [ -z "$ipsw" ]; then
+	url=$(field ipsw_url) ipsw=$W/$(basename "$(field ipsw_url)")
+	if [ ! -f "$ipsw" ]; then
+		echo "Downloading iOS 16.7.16 (20H392) for the iPhone X from Apple's servers; running this is your consent."
+		mkdir -p "$W"
+		curl -fL -C - -o "$ipsw.part" "$url"
+		mv "$ipsw.part" "$ipsw"
+	fi
+fi
+[ -f "$ipsw" ] || { echo "no $ipsw" >&2; exit 1; }
 stamp=$W/ipsw.ok
 if [ "$(cat "$stamp" 2>/dev/null)" != "$(stat -f '%z %m' "$ipsw") $ipsw" ]; then
 	echo "checking $ipsw"
