@@ -13,7 +13,9 @@ and everything on the phone**.
 
 ## Install
 
-1. Back up the phone: whatever you keep from /sdcard, and from the recovery the boot, nvram, nvdata, nvcfg,
+1. Back up your data from Android before installing (photos, files, app data, as you usually keep them): the
+   install erases it. A copy of the userdata partition (an mtkclient dump, for instance) is not a backup of your
+   data: it is encrypted with the phone's own keys. Then, from the recovery, keep the boot, nvram, nvdata, nvcfg,
    persist, protect1 and protect2 partitions (`adb exec-out dd if=/dev/block/by-name/<name> bs=4M > <name>.img`).
 2. On the Mac, in a checkout of this repository's spaced branch: download the release's files into `assets/`
    (`gh release download spaced-1.0 -D assets`), then run `./release.sh` (or `./release.sh --ipsw <your copy>`).
@@ -22,7 +24,7 @@ and everything on the phone**.
 3. `adb reboot bootloader`, then `fastboot flash userdata out/root.img` (Android's data is gone from here),
    then `fastboot reboot recovery`.
 4. In the recovery: `adb sideload out/mapple-spaced-1.0-PERSONAL.zip` (or from an SD card or OTG; not from internal
-   storage). It checks the root, copies the phone's own Wi-Fi, Bluetooth and touch firmware, saves the Android boot
+   storage). If the recovery asks for your Android passcode you may cancel: the zip needs nothing from your data. It checks the root, copies the phone's own Wi-Fi, Bluetooth and touch firmware, saves the Android boot
    image and chains the loader into boot. Reboot when it says Done.
 
 Until step 4 finishes the phone still boots Android, which then sets up its data anew. After it, the loader starts
