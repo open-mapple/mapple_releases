@@ -43,6 +43,7 @@ iOS when the root checks out, and Android otherwise.
 
 - Cellular, camera, sensors, CPU frequency scaling
 - Charging control (the battery level is read), earpiece and headset, Bluetooth audio
+- Low Power Mode: this release has no bridge for it yet
 - The speaker plays well under Android's level; heavy wallpapers can run out of GPU memory; touch is slow on one core
 
 ## Back to Android
