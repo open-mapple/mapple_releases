@@ -57,16 +57,18 @@ EOF
 	[ "$k" = "mapple-$(conf soc "$top/device/realme/spaced/device.conf")-g$(git -C "$top/kernel/mediatek/common" rev-parse --short=8 HEAD)" ] ||
 		{ echo "pack: the kernel in $out ($k) is not common's HEAD: mka mapple again" >&2; exit 1; }
 	rm -rf "$A"; mkdir -p "$A"
+	# the archives name root:wheel as every file's owner, not this Mac's user (rootimage makes them root's anyway)
+	own="--uid 0 --gid 0 --uname root --gname wheel"
 	cp "$out/kernel" "$out/shim.Image" "$out/single/mtkloader.bin" "$out/mapple-install" "$A/"
-	tar -C "$out/root" -cf "$A/root-overlay.tar" .
+	tar -C "$out/root" $own -cf "$A/root-overlay.tar" .
 	# Mapple's Home shows the release from /usr/share/mapple/release (one line: the version after the device name)
 	f=$(mktemp -d)
 	mkdir -p "$f/usr/share/mapple"
 	echo "${tag#*-}" > "$f/usr/share/mapple/release"
 	chmod 644 "$f/usr/share/mapple/release"
-	tar -C "$f" -rf "$A/root-overlay.tar" ./usr/share/mapple/release
+	tar -C "$f" $own -rf "$A/root-overlay.tar" ./usr/share/mapple/release
 	rm -rf "$f"
-	(cd "$top" && tar -cf "$A/tools.tar" build/mapple/LICENSE build/mapple/NOTICE \
+	(cd "$top" && tar $own -cf "$A/tools.tar" build/mapple/LICENSE build/mapple/NOTICE \
 		build/mapple/tools/{adt,extract-dt,mkadt,mkpayload,mkxnup,rootranges,root-tweaks}.py \
 		build/mapple/tools/mkiosroot-macos.sh build/mapple/installer/update-binary \
 		mapple/userland/tools/launchd-add.py mapple/loader/mtk/tools/mkilifw.py device/realme/spaced/device.conf)
@@ -145,7 +147,10 @@ fi
 T=$W/tree BM=$W/tree/build/mapple
 rm -rf "$T" "$W/root"; mkdir -p "$T" "$W/root" "$O"
 tar -C "$T" -xf "$A/tools.tar"
-tar -C "$W/root" -xpf "$A/root-overlay.tar"	# -p: Mapple's helper keeps its set-user-ID bit
+tar -C "$W/root" -xpf "$A/root-overlay.tar"
+# unpacked by you, root's set-user-ID files lose the bit (Mapple's helper): put it back from the archive's listing
+tar -tvf "$A/root-overlay.tar" | awk '$1 ~ /^-..[sS]/ {print $NF}' | while read -r f; do chmod u+s "$W/root/$f"; done
+tar -tvf "$A/root-overlay.tar" | awk '$1 ~ /^-.....[sS]/ {print $NF}' | while read -r f; do chmod g+s "$W/root/$f"; done
 
 echo "device tree and payload"
 python3 "$BM/tools/extract-dt.py" "$ipsw" "$W/d22ap.adt" >/dev/null
