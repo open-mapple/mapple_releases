@@ -59,6 +59,13 @@ EOF
 	rm -rf "$A"; mkdir -p "$A"
 	cp "$out/kernel" "$out/shim.Image" "$out/single/mtkloader.bin" "$out/mapple-install" "$A/"
 	tar -C "$out/root" -cf "$A/root-overlay.tar" .
+	# Mapple's Home shows the release from /usr/share/mapple/release (one line: the version after the device name)
+	f=$(mktemp -d)
+	mkdir -p "$f/usr/share/mapple"
+	echo "${tag#*-}" > "$f/usr/share/mapple/release"
+	chmod 644 "$f/usr/share/mapple/release"
+	tar -C "$f" -rf "$A/root-overlay.tar" ./usr/share/mapple/release
+	rm -rf "$f"
 	(cd "$top" && tar -cf "$A/tools.tar" build/mapple/LICENSE build/mapple/NOTICE \
 		build/mapple/tools/{adt,extract-dt,mkadt,mkpayload,mkxnup,rootranges,root-tweaks}.py \
 		build/mapple/tools/mkiosroot-macos.sh build/mapple/installer/update-binary \
