@@ -38,6 +38,7 @@ iOS when the root checks out, and Android otherwise.
 - Bluetooth (pairing, LE scan, a keyboard)
 - Speaker and main microphone, vibration, the torch (lock screen and Control Center)
 - Storage: iOS on the phone's UFS, read-write
+- Mapple, the settings app, with Sileo for packages
 
 ## Not yet
 
@@ -49,3 +50,9 @@ iOS when the root checks out, and Android otherwise.
 ## Back to Android
 
 Flash the boot image you saved (`fastboot flash boot boot.img`), then Format Data in the recovery.
+
+## Credits
+
+Sileo 2.5.1 (BSD 4-Clause, Copyright (c) 2021, the Sileo Project), built with Open Mapple's fix for its root file
+moves; this product includes software developed by the Sileo Team. The libraries built into it are under their own
+licences (MIT, Apache 2.0, BSD 2-Clause), whose texts are in Sileo.app/Licenses.
