@@ -6,10 +6,11 @@ and everything on the phone**.
 ## What you need
 
 - A realme 8i (RMX3151), bootloader unlocked, a recovery that runs zips (TWRP or OrangeFox), adb and fastboot.
-- A Mac with python3, zip and GNU rsync (`brew install rsync`), about 30 GB free, and an admin password (the root
-  image is built with sudo).
-- iOS 16.7.16 (20H392) for the iPhone X: release.sh downloads it from Apple's servers (running it is your consent),
-  or takes your own copy with `--ipsw`. Nothing of Apple's is in this release; the iOS parts are made on your Mac.
+- A computer with Windows (x64, or ARM through its emulation), Linux (x64 or arm64), macOS, or a 64-bit Android
+  phone with Termux (not the realme): about 21 GB free (15 GB with your own copy of iOS), under 2 GB of memory.
+- iOS 16.7.16 (20H392) for the iPhone X: mapple-assemble downloads the parts it needs from Apple's servers (running
+  it is your consent), or reads your own copy with `-ipsw`. Nothing of Apple's is in this release; the iOS parts are
+  put together on your computer.
 
 ## Install
 
@@ -17,10 +18,12 @@ and everything on the phone**.
    install erases it. A copy of the userdata partition (an mtkclient dump, for instance) is not a backup of your
    data: it is encrypted with the phone's own keys. Then, from the recovery, keep the boot, nvram, nvdata, nvcfg,
    persist, protect1 and protect2 partitions (`adb exec-out dd if=/dev/block/by-name/<name> bs=4M > <name>.img`).
-2. On the Mac, in a checkout of this repository's spaced branch: download the release's files into `assets/`
-   (`gh release download spaced-1.0 -D assets`), then run `./release.sh` (or `./release.sh --ipsw <your copy>`).
-   It checks the files' signature and the IPSW, asks you to run one sudo command for the root image, and leaves
-   `out/root.img` and `out/mapple-spaced-1.0-PERSONAL.zip`. Keep both to yourself: they hold iOS.
+2. Download the release's files into one folder (`gh release download spaced-1.0 -D mapple`, or by hand: MANIFEST,
+   MANIFEST.sig, allowed_signers, every file MANIFEST lists but the other systems' mapple-assemble). In that folder run
+   `mapple-assemble-windows-amd64.exe`, `./mapple-assemble-linux-amd64` (arm64 and Termux: `-linux-arm64`) or
+   `./mapple-assemble-macos`, with `-ipsw <your copy>` to use your own IPSW. It checks the files' signature and
+   iOS, and in a minute or two after the download leaves `out/root.img` and `out/mapple-spaced-1.0-PERSONAL.zip`.
+   Keep both to yourself: they hold iOS. The install guide on the website has the steps for each system.
 3. `adb reboot bootloader`, then `fastboot flash userdata out/root.img` (Android's data is gone from here),
    then `fastboot reboot recovery`.
 4. In the recovery: `adb sideload out/mapple-spaced-1.0-PERSONAL.zip` (or from an SD card or OTG; not from internal
@@ -37,14 +40,17 @@ iOS when the root checks out, and Android otherwise.
 - Wi-Fi (scan, WPA2 join, Safari, downloads)
 - Bluetooth (pairing, LE scan, a keyboard)
 - Speaker and main microphone, vibration, the torch (lock screen and Control Center)
+- Earpiece (the speakerphone button does not move the sound to the speaker yet)
+- Sensors, partly: rotation works; the other sensors are release 2
 - Storage: iOS on the phone's UFS, read-write
 - Mapple, the settings app, with Sileo for packages
 
 ## Not yet
 
-- Cellular, camera, sensors, CPU frequency scaling
-- Charging control (the battery level is read), earpiece and headset, Bluetooth audio
+- Cellular, camera, CPU frequency scaling
+- Charging control (the battery level is read), headset, Bluetooth audio, a Bluetooth headset's microphone
 - Low Power Mode: this release has no bridge for it yet
+- Photos thumbnails and photo wallpapers draw black; Files' "On My iPhone" does not work yet
 - The speaker plays well under Android's level; heavy wallpapers can run out of GPU memory; touch is slow on one core
 
 ## Back to Android
