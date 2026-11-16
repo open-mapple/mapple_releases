@@ -63,6 +63,8 @@ EOF
 	own="--uid 0 --gid 0 --uname root --gname wheel --format ustar --no-xattrs --no-acls --no-fflags --no-mac-metadata"
 	cp "$out/kernel" "$out/shim.Image" "$out/single/mtkloader.bin" "$out/mapple-install" "$A/"
 	tar -C "$out/root" $own -cf "$A/root-overlay.tar" .
+	# the Mapple app alone, for builds without the private mapple_manager (common.conf's mapple_app pin)
+	tar -C "$out/root" $own -cf "$A/mapple-app.tar" ./Applications/Mapple.app ./usr/lib/mapple/tweakloader.dylib
 	# Mapple's Home shows the release from /usr/share/mapple/release (one line: the version after the device name)
 	f=$(mktemp -d)
 	mkdir -p "$f/usr/share/mapple"
@@ -134,7 +136,7 @@ EOF2
 			echo "source $r $(git -C "$top/$r" rev-parse HEAD)"
 		done
 		cat "$d/members"
-		for f in kernel shim.Image mtkloader.bin mapple-install root-overlay.tar tools.tar adt.template xnu.template $bins; do
+		for f in kernel shim.Image mtkloader.bin mapple-install root-overlay.tar mapple-app.tar tools.tar adt.template xnu.template $bins; do
 			echo "file $(sha "$A/$f") $(stat -f %z "$A/$f") $f"
 		done
 	} > "$H/MANIFEST"
