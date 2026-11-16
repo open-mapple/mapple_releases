@@ -36,7 +36,7 @@ projects="build/mapple vendor/mapple device/realme/spaced mapple/loader mapple/s
 	kernel/mediatek/common kernel/mediatek/mt6781"
 
 pack() {
-	local out=$1 top=$2 tag=$3 rehearsal=${4:-} f r k
+	local out=$1 top=$2 tag=$3 rehearsal=${4:-} f r k d ipsw
 	[ ! -d "$top/mapple/manager" ] || projects="$projects mapple/manager"	# the Mapple app, when the tree has it
 	[ -z "$rehearsal" ] || tag=$tag-rehearsal
 	for r in $projects; do
@@ -73,6 +73,43 @@ EOF
 		build/mapple/tools/{adt,extract-dt,mkadt,mkpayload,mkxnup,rootranges,root-tweaks}.py \
 		build/mapple/tools/mkiosroot-macos.sh build/mapple/installer/update-binary \
 		mapple/userland/tools/launchd-add.py mapple/loader/mtk/tools/mkilifw.py device/realme/spaced/device.conf)
+	# For the cross-platform assembler: the ADT and the payload with /product's Apple properties left out (it puts
+	# the IPSW's back in), and the pins of the IPSW members it reads
+	ipsw=$top/out/ipsw/$(basename "$(conf ipsw_url "$top/vendor/mapple/config/common.conf")")
+	[ -f "$ipsw" ] || { echo "pack: no $ipsw" >&2; exit 1; }
+	d=$(mktemp -d)
+	python3 "$top/build/mapple/tools/extract-dt.py" "$ipsw" "$d/d22ap.adt" >/dev/null
+	# shellcheck disable=SC2046
+	D22AP_ADT=$d/d22ap.adt python3 "$top/build/mapple/tools/mkadt.py" "$d/full.adt" $(conf adt "$top/device/realme/spaced/device.conf") >/dev/null
+	python3 - "$top/build/mapple/tools" "$d/d22ap.adt" "$d/full.adt" "$A/adt.template" <<'EOF2'
+import sys
+sys.path.insert(0, sys.argv[1])
+import adt
+d22ap, _ = adt.parse(open(sys.argv[2], 'rb').read())
+apple = {k: v for k, f, v in next(c for c in d22ap.children if c.name == 'product').props
+         if not f and k not in ('name', 'AAPL,phandle')}
+root, _ = adt.parse(open(sys.argv[3], 'rb').read())
+product = next(c for c in root.children if c.name == 'product')
+kept = [(k, f, v) for k, f, v in product.props if k in ('name', 'AAPL,phandle') or apple.get(k) != v]
+assert all(k in apple for k, _, _ in kept if k not in ('name', 'AAPL,phandle')), 'a /product property not from the IPSW'
+product.props = kept
+open(sys.argv[4], 'wb').write(adt.serialize(root))
+EOF2
+	python3 "$top/build/mapple/tools/mkpayload.py" "$out/kernel" "$A/adt.template" "$A/xnu.template" \
+		--cmdline "$(cat "$out/single/cmdline")" >/dev/null
+	python3 - "$ipsw" > "$d/members" <<'EOF2'
+import hashlib, plistlib, sys, zipfile
+z = zipfile.ZipFile(sys.argv[1])
+m = plistlib.loads(z.read('BuildManifest.plist'))['BuildIdentities'][0]['Manifest']
+for role, name in (('os', m['OS']['Info']['Path']), ('systemos', m['Cryptex1,SystemOS']['Info']['Path']),
+                   ('appos', m['Cryptex1,AppOS']['Info']['Path']), ('devicetree', 'Firmware/all_flash/DeviceTree.d22ap.im4p')):
+    h, n = hashlib.sha256(), 0
+    with z.open(name) as r:
+        for b in iter(lambda: r.read(1 << 20), b''):
+            h.update(b)
+            n += len(b)
+    print('ipsw_member', role, h.hexdigest(), n, name)
+EOF2
 	{
 		echo "release $tag"
 		echo "ipsw $(conf ipsw_size "$top/vendor/mapple/config/common.conf") $(conf ipsw_sha256 "$top/vendor/mapple/config/common.conf")"
@@ -83,10 +120,12 @@ EOF
 		for r in $projects; do
 			echo "source $r $(git -C "$top/$r" rev-parse HEAD)"
 		done
-		for f in kernel shim.Image mtkloader.bin mapple-install root-overlay.tar tools.tar; do
+		cat "$d/members"
+		for f in kernel shim.Image mtkloader.bin mapple-install root-overlay.tar tools.tar adt.template xnu.template; do
 			echo "file $(sha "$A/$f") $(stat -f %z "$A/$f") $f"
 		done
 	} > "$H/MANIFEST"
+	rm -rf "$d"
 	sed -n 's/^file \([0-9a-f]*\) [0-9]* \(.*\)/\1  \2/p' "$H/MANIFEST" > "$A/SHA256SUMS"
 	rm -f "$H/MANIFEST.sig"
 	cat "$H/MANIFEST"
