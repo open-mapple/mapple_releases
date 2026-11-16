@@ -36,8 +36,9 @@ projects="build/mapple vendor/mapple device/realme/spaced mapple/loader mapple/s
 	kernel/mediatek/common kernel/mediatek/mt6781"
 
 pack() {
-	local out=$1 top=$2 tag=$3 rehearsal=${4:-} f r k d ipsw
+	local out=$1 top=$2 tag=$3 rehearsal=${4:-} f r k d ipsw t bins
 	[ ! -d "$top/mapple/manager" ] || projects="$projects mapple/manager"	# the Mapple app, when the tree has it
+	projects="$projects mapple/assembler"
 	[ -z "$rehearsal" ] || tag=$tag-rehearsal
 	for r in $projects; do
 		[ -z "$(git -C "$top/$r" status --porcelain --untracked-files=no)" ] || { echo "pack: $r has changes" >&2; exit 1; }
@@ -58,8 +59,8 @@ EOF
 		{ echo "pack: the kernel in $out ($k) is not common's HEAD: mka mapple again" >&2; exit 1; }
 	rm -rf "$A"; mkdir -p "$A"
 	# the archives name root:wheel as every file's owner, not this Mac's user (rootimage makes them root's anyway)
-	# and carry no AppleDouble ._ entries (this Mac's xattrs: provenance, quarantine)
-	own="--uid 0 --gid 0 --uname root --gname wheel --no-mac-metadata"
+	# and carry nothing else of this Mac's: plain ustar, no xattrs (provenance, quarantine), ACLs or flags
+	own="--uid 0 --gid 0 --uname root --gname wheel --format ustar --no-xattrs --no-acls --no-fflags --no-mac-metadata"
 	cp "$out/kernel" "$out/shim.Image" "$out/single/mtkloader.bin" "$out/mapple-install" "$A/"
 	tar -C "$out/root" $own -cf "$A/root-overlay.tar" .
 	# Mapple's Home shows the release from /usr/share/mapple/release (one line: the version after the device name)
@@ -67,6 +68,7 @@ EOF
 	mkdir -p "$f/usr/share/mapple"
 	echo "${tag#*-}" > "$f/usr/share/mapple/release"
 	chmod 644 "$f/usr/share/mapple/release"
+	touch -t 202601010000 "$f/usr/share/mapple/release"	# the same archive from the same build
 	tar -C "$f" $own -rf "$A/root-overlay.tar" ./usr/share/mapple/release
 	rm -rf "$f"
 	(cd "$top" && tar $own -cf "$A/tools.tar" build/mapple/LICENSE build/mapple/NOTICE \
@@ -110,6 +112,17 @@ for role, name in (('os', m['OS']['Info']['Path']), ('systemos', m['Cryptex1,Sys
             n += len(b)
     print('ipsw_member', role, h.hexdigest(), n, name)
 EOF2
+	# mapple-assemble for Windows, Linux (Termux too) and macOS: reproducible, the same commit and Go give the same bytes
+	bins="mapple-assemble-windows-amd64.exe mapple-assemble-linux-amd64 mapple-assemble-linux-arm64 mapple-assemble-macos"
+	for t in windows/amd64/mapple-assemble-windows-amd64.exe linux/amd64/mapple-assemble-linux-amd64 \
+		linux/arm64/mapple-assemble-linux-arm64 darwin/amd64/mac-amd64 darwin/arm64/mac-arm64; do
+		(cd "$top/mapple/assembler" && GOTOOLCHAIN=go1.27.4 CGO_ENABLED=0 GOOS=${t%%/*} GOARCH=$(echo "$t" | cut -d/ -f2) \
+			go build -trimpath -buildvcs=false -ldflags='-s -w -buildid=' -o "$d/${t##*/}" ./cmd/mapple-assemble) ||
+			{ echo "pack: building mapple-assemble failed" >&2; exit 1; }
+	done
+	lipo -create -output "$A/mapple-assemble-macos" "$d/mac-amd64" "$d/mac-arm64"
+	codesign -s - -f "$A/mapple-assemble-macos" 2>/dev/null
+	for f in mapple-assemble-windows-amd64.exe mapple-assemble-linux-amd64 mapple-assemble-linux-arm64; do mv "$d/$f" "$A/"; done
 	{
 		echo "release $tag"
 		echo "ipsw $(conf ipsw_size "$top/vendor/mapple/config/common.conf") $(conf ipsw_sha256 "$top/vendor/mapple/config/common.conf")"
@@ -121,7 +134,7 @@ EOF2
 			echo "source $r $(git -C "$top/$r" rev-parse HEAD)"
 		done
 		cat "$d/members"
-		for f in kernel shim.Image mtkloader.bin mapple-install root-overlay.tar tools.tar adt.template xnu.template; do
+		for f in kernel shim.Image mtkloader.bin mapple-install root-overlay.tar tools.tar adt.template xnu.template $bins; do
 			echo "file $(sha "$A/$f") $(stat -f %z "$A/$f") $f"
 		done
 	} > "$H/MANIFEST"
@@ -130,7 +143,7 @@ EOF2
 	rm -f "$H/MANIFEST.sig"
 	cat "$H/MANIFEST"
 	echo "Next: ./release.sh sign <the release key>; commit MANIFEST, MANIFEST.sig and notes/$tag.md; tag $tag;"
-	echo "gh release create $tag assets/* MANIFEST MANIFEST.sig --notes-file notes/$tag.md"
+	echo "gh release create $tag assets/* MANIFEST MANIFEST.sig allowed_signers --notes-file notes/$tag.md"
 }
 
 sign() {
