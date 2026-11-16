@@ -58,7 +58,8 @@ EOF
 		{ echo "pack: the kernel in $out ($k) is not common's HEAD: mka mapple again" >&2; exit 1; }
 	rm -rf "$A"; mkdir -p "$A"
 	# the archives name root:wheel as every file's owner, not this Mac's user (rootimage makes them root's anyway)
-	own="--uid 0 --gid 0 --uname root --gname wheel"
+	# and carry no AppleDouble ._ entries (this Mac's xattrs: provenance, quarantine)
+	own="--uid 0 --gid 0 --uname root --gname wheel --no-mac-metadata"
 	cp "$out/kernel" "$out/shim.Image" "$out/single/mtkloader.bin" "$out/mapple-install" "$A/"
 	tar -C "$out/root" $own -cf "$A/root-overlay.tar" .
 	# Mapple's Home shows the release from /usr/share/mapple/release (one line: the version after the device name)
