@@ -36,7 +36,7 @@ projects="build/mapple vendor/mapple device/realme/spaced mapple/loader mapple/s
 	kernel/mediatek/common kernel/mediatek/mt6781"
 
 pack() {
-	local out=$1 top=$2 tag=$3 rehearsal=${4:-} f r k d ipsw t bins
+	local out=$1 top=$2 tag=$3 rehearsal=${4:-} f r k d ipsw t bins pin
 	[ ! -d "$top/mapple/manager" ] || projects="$projects mapple/manager"	# the Mapple app, when the tree has it
 	projects="$projects mapple/assembler"
 	[ -z "$rehearsal" ] || tag=$tag-rehearsal
@@ -65,6 +65,16 @@ EOF
 	tar -C "$out/root" $own -cf "$A/root-overlay.tar" .
 	# the Mapple app alone, for builds without the private mapple_manager (common.conf's mapple_app pin)
 	tar -C "$out/root" $own -cf "$A/mapple-app.tar" ./Applications/Mapple.app ./usr/lib/mapple/tweakloader.dylib
+	# public sources build with it, so vendor/mapple pins it before the release is packed
+	f="$tag" && f=${f%-rehearsal}
+	pin="mapple_app_url	https://github.com/open-mapple/mapple_releases/releases/download/$f/mapple-app.tar
+mapple_app_size	$(stat -f %z "$A/mapple-app.tar")
+mapple_app_sha256	$(sha "$A/mapple-app.tar")"
+	if [ "$(grep '^mapple_app_' "$top/vendor/mapple/config/common.conf")" != "$pin" ]; then
+		echo "pack: vendor/mapple/config/common.conf must pin this release's Mapple app; land these lines, then pack again:" >&2
+		echo "$pin" >&2
+		[ -n "$rehearsal" ] || exit 1
+	fi
 	# Mapple's Home shows the release from /usr/share/mapple/release (one line: the version after the device name)
 	f=$(mktemp -d)
 	mkdir -p "$f/usr/share/mapple"
