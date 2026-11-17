@@ -22,8 +22,8 @@ and everything on the phone**.
    MANIFEST.sig, allowed_signers, every file MANIFEST lists but the other systems' mapple-assemble). In that folder run
    `mapple-assemble-windows-amd64.exe`, `./mapple-assemble-linux-amd64` (arm64 and Termux: `-linux-arm64`) or
    `./mapple-assemble-macos`, with `-ipsw <your copy>` to use your own IPSW. It checks the files' signature and
-   iOS, and in a minute or two after the download leaves `out/root.img` and `out/mapple-spaced-1.0-PERSONAL.zip`.
-   Keep both to yourself: they hold iOS. The install guide on the website has the steps for each system.
+   iOS, and in a minute or two after the download leaves `out/root.img`, `out/mapple-spaced-1.0-PERSONAL.zip` and
+   the dual boot's two zips (below). Keep root.img and the PERSONAL zips to yourself: they hold iOS. The install guide on the website has the steps for each system.
 3. `adb reboot bootloader`, then `fastboot flash userdata out/root.img` (Android's data is gone from here),
    then `fastboot reboot recovery`.
 4. In the recovery: `adb sideload out/mapple-spaced-1.0-PERSONAL.zip` (or from an SD card or OTG; not from internal
@@ -32,6 +32,23 @@ and everything on the phone**.
 
 Until step 4 finishes the phone still boots Android, which then sets up its data anew. After it, the loader starts
 iOS when the root checks out, and Android otherwise.
+
+## Dual boot (SplitBoot)
+
+SplitBoot keeps Android and puts iOS beside it, on a 22 GiB partition (xnusys) taken from the end of Android's data.
+Android's system stays, but its data is erased: back up first, as in step 1.
+
+1. In the recovery: `adb sideload out/mapple-spaced-1.0-split-PERSONAL.zip`. This first pass carves xnusys off
+   userdata's end; Android still starts.
+2. `adb reboot bootloader`, then `fastboot flash xnusys out/root.img` (the same root.img), then
+   `fastboot reboot recovery`.
+3. The same zip again: it checks the root, copies the phone's firmware, saves Android's boot image and puts the menu
+   in front of it.
+
+At every start a boot menu offers Android and iOS (volume keys to choose, Power to start); with no key pressed,
+Android starts after 15 s. After an Android update, run the split zip once more to bring the menu back; iOS's data
+stays. `out/mapple-spaced-1.0-uninstall.zip` gives the space back to Android and puts its boot and partition table
+back as they were (both systems' data is erased). The full guide: https://open-mapple.pages.dev/splitboot/
 
 ## Works
 
