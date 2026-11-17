@@ -46,7 +46,8 @@ iOS when the root checks out, and Android otherwise.
 - Photos: the grid and thumbnails
 - Files: "On My iPhone"
 - Video (converted on the CPU for now)
-- Wallpapers, partly: Colour and one of the Collections
+- Wallpapers, partly: Colour and lighter wallpapers work. Heavy wallpapers, like photo wallpapers and most of the
+  Collections set, may not work yet (release 2).
 - Mapple, the settings app, with Sileo for packages
 
 Release 1 loads one small library into fileproviderd so Files can use the phone's storage.
@@ -56,7 +57,6 @@ Release 1 loads one small library into fileproviderd so Files can use the phone'
 - Cellular, camera, CPU frequency scaling
 - Charging control (the battery level is read), headset, Bluetooth audio, a Bluetooth headset's microphone
 - Low Power Mode: this release has no bridge for it yet
-- The photo wallpaper and the rest of the Collections wallpapers (release 2)
 - App Store: the front page loads, nothing installs
 - The speaker plays well under Android's level; heavy wallpapers can run out of GPU memory; touch is slow on one core
 
