@@ -111,6 +111,13 @@ open(sys.argv[4], 'wb').write(adt.serialize(root))
 EOF2
 	python3 "$top/build/mapple/tools/mkpayload.py" "$out/kernel" "$A/adt.template" "$A/xnu.template" \
 		--cmdline "$(cat "$out/single/cmdline")" >/dev/null
+	# dual boot (SplitBoot): mka's split product's loader (the boot menu) and line (mp_ufsroot=xnusys)
+	for f in "$out/split/mtkloader.bin" "$out/split/cmdline"; do
+		[ -f "$f" ] || { echo "pack: no $f: lunch mapple_spaced_split-user; mka loader payload" >&2; exit 1; }
+	done
+	cp "$out/split/mtkloader.bin" "$A/mtkloader-split.bin"
+	python3 "$top/build/mapple/tools/mkpayload.py" "$out/kernel" "$A/adt.template" "$A/xnu-split.template" \
+		--cmdline "$(cat "$out/split/cmdline")" >/dev/null
 	python3 - "$ipsw" > "$d/members" <<'EOF2'
 import hashlib, plistlib, sys, zipfile
 z = zipfile.ZipFile(sys.argv[1])
@@ -140,13 +147,16 @@ EOF2
 		echo "ipsw $(conf ipsw_size "$top/vendor/mapple/config/common.conf") $(conf ipsw_sha256 "$top/vendor/mapple/config/common.conf")"
 		echo "ipsw_url $(conf ipsw_url "$top/vendor/mapple/config/common.conf")"
 		echo "cmdline $(cat "$out/single/cmdline")"
+		echo "split_cmdline $(cat "$out/split/cmdline")"
+		echo "split_size $(conf split_size "$top/device/realme/spaced/device.conf")"
 		for f in adt payload_max root_size; do echo "$f $(conf $f "$top/device/realme/spaced/device.conf")"; done
 		echo "kver $k"
 		for r in $projects; do
 			echo "source $r $(git -C "$top/$r" rev-parse HEAD)"
 		done
 		cat "$d/members"
-		for f in kernel shim.Image mtkloader.bin mapple-install root-overlay.tar mapple-app.tar tools.tar adt.template xnu.template $bins; do
+		for f in kernel shim.Image mtkloader.bin mtkloader-split.bin mapple-install root-overlay.tar mapple-app.tar tools.tar adt.template \
+			xnu.template xnu-split.template $bins; do
 			echo "file $(sha "$A/$f") $(stat -f %z "$A/$f") $f"
 		done
 	} > "$H/MANIFEST"
