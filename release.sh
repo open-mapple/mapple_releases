@@ -64,7 +64,7 @@ EOF
 	cp "$out/kernel" "$out/shim.Image" "$out/single/mtkloader.bin" "$out/mapple-install" "$A/"
 	tar -C "$out/root" $own -cf "$A/root-overlay.tar" .
 	# the Mapple app alone, for builds without the private mapple_manager (common.conf's mapple_app pin)
-	tar -C "$out/root" $own -cf "$A/mapple-app.tar" ./Applications/Mapple.app ./usr/lib/mapple/tweakloader.dylib
+	tar -C "$out/root" $own -cf "$A/mapple-app.tar" ./Applications/Mapple.app ./usr/lib/mapple
 	# public sources build with it, so vendor/mapple pins it before the release is packed
 	f="$tag" && f=${f%-rehearsal}
 	pin="mapple_app_url	https://github.com/open-mapple/mapple_releases/releases/download/$f/mapple-app.tar
