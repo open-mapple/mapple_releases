@@ -86,3 +86,19 @@ Flash the boot image you saved (`fastboot flash boot boot.img`), then Format Dat
 Sileo 2.5.1 (BSD 4-Clause, Copyright (c) 2021, the Sileo Project), built with Open Mapple's fix for its root file
 moves; this product includes software developed by the Sileo Team. The libraries built into it are under their own
 licences (MIT, Apache 2.0, BSD 2-Clause), whose texts are in Sileo.app/Licenses.
+
+## Licences
+
+- mapple-install and the boot loaders (mtkloader.bin, mtkloader-split.bin) contain SplitBoot and the boot menu, so
+  they are GPL-3.0-only as a whole. Source: [mapple_splitboot](https://github.com/open-mapple/mapple_splitboot),
+  [mapple_build](https://github.com/open-mapple/mapple_build) and [mapple_loader](https://github.com/open-mapple/mapple_loader),
+  at the commits listed in MANIFEST.
+- Mapple and mapple-assemble: Copyright (c) 2026 Pritish Joshi (DrtSinX98), all rights reserved, free to use with
+  Open Mapple. mapple-assemble only carries the GPL files above into the zips it makes; `mapple-assemble licenses`
+  prints the licences of the libraries built into it.
+- Turning on packages in Mapple downloads Procursus's bootstrap (suite 1900, `bootstrap-iphoneos-arm64.tar.zst`, SHA-256
+  8354c3aa1ecdad8ebc47d9a76dfca6f830a2b757278068bd33b98bf1d638a9cb) from apt.procurs.us; it is not part of this
+  release. Its GNU and Debian tools are GPL: apt 2.9.4, dpkg 1.22.6, debianutils 5.17, bash 5.2.21, coreutils 9.5,
+  diffutils 3.10, findutils 4.9.0, grep 3.11, sed 4.9, tar 1.35 and gpgv 2.4.5; several of its libraries are LGPL.
+  Their sources are those upstream releases with Procursus's makefiles and patches
+  ([ProcursusTeam/Procursus](https://github.com/ProcursusTeam/Procursus)).
