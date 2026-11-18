@@ -5,8 +5,8 @@ Not under it:
   Source: github.com/open-mapple/mapple_splitboot, mapple_build and mapple_loader, at the commits MANIFEST names.
 - Mapple (mapple-app.tar) and mapple-assemble: Copyright (c) 2026 Pritish Joshi (DrtSinX98), all rights reserved,
   free to use with Open Mapple. mapple-assemble only carries the GPL files above into the zips it makes. The
-  open-source code built into them keeps its own licence: Sileo's in the notes, and those of mapple-assemble's
-  libraries in `mapple-assemble licenses`.
+  open-source code built into them keeps its own licence: Sileo's, the tweak loader's (HakiOS, MIT)
+  and Zstandard's (BSD) in the notes, and those of mapple-assemble's libraries in `mapple-assemble licenses`.
 
 Nothing of Apple's or the phone maker's is in this repository or in its releases: iOS is fetched and put together on
 the user's computer, and the recovery zip reads the phone's own firmware on the phone.
