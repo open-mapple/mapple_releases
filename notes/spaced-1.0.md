@@ -146,8 +146,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ## Licences
 
-- mapple-install and the boot loaders (mtkloader.bin, mtkloader-split.bin) contain SplitBoot and the boot menu, so
-  they are GPL-3.0-only as a whole. Source: [mapple_splitboot](https://github.com/open-mapple/mapple_splitboot),
+- mapple-install (SplitBoot's split verbs) and the dual boot loader (mtkloader-split.bin, the boot menu) are
+  GPL-3.0-only as a whole; the single boot loader (mtkloader.bin) is MIT. Source: [mapple_splitboot](https://github.com/open-mapple/mapple_splitboot),
   [mapple_build](https://github.com/open-mapple/mapple_build) and [mapple_loader](https://github.com/open-mapple/mapple_loader),
   at the commits listed in MANIFEST.
 - Mapple and mapple-assemble: Copyright (c) 2026 Pritish Joshi (DrtSinX98), all rights reserved, free to use with

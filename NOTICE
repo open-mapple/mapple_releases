@@ -1,7 +1,8 @@
 Open Mapple: the releases, one branch per device. The files in this repository are MIT (LICENSE).
 
 Not under it:
-- mapple-install, mtkloader.bin and mtkloader-split.bin contain SplitBoot and the boot menu: GPL-3.0-only as a whole.
+- mapple-install (SplitBoot's split verbs) and mtkloader-split.bin (the boot menu): GPL-3.0-only as a whole.
+  mtkloader.bin, the single boot loader, is MIT.
   Source: github.com/open-mapple/mapple_splitboot, mapple_build and mapple_loader, at the commits MANIFEST names.
 - Mapple (mapple-app.tar) and mapple-assemble: Copyright (c) 2026 Pritish Joshi (DrtSinX98), all rights reserved,
   free to use with Open Mapple. mapple-assemble only carries the GPL files above into the zips it makes. The
