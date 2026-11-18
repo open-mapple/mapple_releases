@@ -1,0 +1,40 @@
+release spaced-1.0
+ipsw 6171035648 ece1194f7e233e9109c5790a8d23a4564a10a254e15ec5b09978a343265568fb
+ipsw_url https://updates.cdn-apple.com/2025FallFCS/fullrestores/122-77006/1158E502-D76D-4226-AA06-ED5E30CD1111/iPhone10,3,iPhone10,6_16.7.16_20H392_Restore.ipsw
+cmdline debug=0xc serial=3 keepsyms=1 -enable_kprintf_spam -noprogress rd=ufsroot0 wdt=-1 wdt_test=no_user_checkin mp_touch=0 mp_conlog=0 mp_fb_noconsole=1 mp_ufslun=2 mp_ufsroot=userdata mp_ufsrw=1 mp_rootrw=1 mp_bootrec_nowrite=1 unentitled_ios_sim_launch=1 ignition_level=1 launchd_unsecure_cache=1 cpus=8 mp_usblink=0 mp_cpufreq=2 mp_therm=1 mp_therm_hwreset=117 mp_therm_trip=75 mp_gauge=1 mp_gpu=2 mp_gpu_lkrails=1 mp_wifi_steps=5 mp_bt_steps=2 mp_wifi_emi=0xbf000000
+split_cmdline debug=0xc serial=3 keepsyms=1 -enable_kprintf_spam -noprogress rd=ufsroot0 wdt=-1 wdt_test=no_user_checkin mp_touch=0 mp_conlog=0 mp_fb_noconsole=1 mp_ufslun=2 mp_ufsroot=xnusys mp_ufsrw=1 mp_rootrw=1 mp_bootrec_nowrite=1 unentitled_ios_sim_launch=1 ignition_level=1 launchd_unsecure_cache=1 cpus=8 mp_usblink=3 mp_cpufreq=2 mp_therm=1 mp_therm_hwreset=117 mp_therm_trip=75 mp_gauge=1 mp_gpu=2 mp_gpu_lkrails=1 mp_wifi_steps=5 mp_bt_steps=2 mp_wifi_emi=0xbf000000
+split_size 22
+adt --spaced --ufs --audio --torch
+payload_max 0x3fe0000
+root_size 16g
+kver mapple-mt6781-gc0337482
+source build/mapple 7262951971120a95b95a3d1bbe4e19e6b0a47f6a
+source vendor/mapple 0b3065ed308ed6ecb51fc487f886428154c047ec
+source device/realme/spaced 16bd43c123781e40ac4e17fa55db24e41883b89d
+source mapple/loader 3f9da28db29605696dd3192c60f0617654979f18
+source mapple/splitboot e496a55a618218fa28209070ab38ee47bc3a62b7
+source mapple/userland 1f8348c29494eee534948bc10568070c7c3a6224
+source mapple/gpu/mali 85954b3d6fa540bc79107003fcc5f6f1e4573137
+source kernel/mediatek/common c033748294968d155f7cd5ac7b152d4368149497
+source kernel/mediatek/mt6781 801d7681b0d157e2f5751452edc8e76ae2e866ee
+source mapple/manager fb444468fa7eee2a4ccdaa9f323674a831d0d15e
+source mapple/assembler 0c54d916968cc94b57b415651e78e1a8afc71c21
+ipsw_member os 80f426d5b8fca8552f95be427434f1911dbb4c2c6d28aad94f2426ddd0c92483 4730814044 087-86698-044.dmg
+ipsw_member systemos 9cd738f3b0169055549df84ad6d8d13e50a2da39af618ce0522ca4e06df86849 2743074816 087-86593-047.dmg
+ipsw_member appos 391f2df322c3172b021b2874f6da5c3e78b70b3df8f502e1a4af2b1d715c4608 10485760 087-86715-047.dmg
+ipsw_member devicetree 480e8b0888949b4128b7aa2cd254497581c69e1bafa596a760b2fa955a8a6368 33719 Firmware/all_flash/DeviceTree.d22ap.im4p
+file f6a2808131732803b8066cb4f8074928c131b826bdf87ced83639dfb274e5eba 13114104 kernel
+file 27ae66f7998b40f4fbe901739bd5a094e72d53dfe69163e283b01803d593f6fb 139264 shim.Image
+file 8d2257962411564332a20c2c3b84b202219312d2ac122610e3ef5d0abd841535 48008 mtkloader.bin
+file 6b52a9dc76d67af8a20230fffb3d3b3792beff01f77444dab98afe9c794a066e 51352 mtkloader-split.bin
+file 34ba7b74d93bce0228832dacc1816fd223bab9845fac149913110d46bc1be5cc 160768 mapple-install
+file 734980351f5170fccf52fe17530ced18aed76875fc69190eaa805aaf8a3b4013 19160576 root-overlay.tar
+file 2587aab3819bbfae00c7c54326391efbe238b004e7f92ea6de54043f6cf4a854 4007424 mapple-app.tar
+file d86fdd01733e704a96c4f7a31eec4d4038a5dd53fbbd3a012251a753eaa480b2 107008 tools.tar
+file 799b9b6b0f9d7692b413c806c14e0949576bae24629da0ca2e9c85f1d96061b3 14744 adt.template
+file 7fba7a1800f056517e23c83a21bb111996a75111279319cbdc2d1724473f2a14 12556432 xnu.template
+file 78f190ba87b048250576c06bf50f6d492802c18e4ec9e11888a693cb55e9a639 12556432 xnu-split.template
+file f6781e7ccd764a685317a37df55866a2401a807a48c3689df92d2f39d602cea7 7348736 mapple-assemble-windows-amd64.exe
+file 329e8b970617d638a31541a47d5b752ea202131745683e03c152239b8e0bb0ee 7143548 mapple-assemble-linux-amd64
+file 43125d4456b98324e32fe230204d98278541bf9bf20d0342e6b14ac14aa2d1ad 6619260 mapple-assemble-linux-arm64
+file e209305d36771d9cecbe1ff2ee5e24c90d3534f6a8461f86d471349bce37526b 14181520 mapple-assemble-macos
