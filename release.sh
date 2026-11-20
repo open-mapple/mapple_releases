@@ -85,8 +85,10 @@ mapple_app_sha256	$(sha "$A/mapple-app.tar")"
 	rm -rf "$f"
 	(cd "$top" && tar $own -cf "$A/tools.tar" build/mapple/LICENSE build/mapple/NOTICE \
 		build/mapple/tools/{adt,extract-dt,mkadt,mkpayload,mkxnup,rootranges,root-tweaks}.py \
+		build/mapple/tools/soc/"$(conf soc "$top/device/realme/spaced/device.conf")".py \
 		build/mapple/tools/mkiosroot-macos.sh build/mapple/installer/update-binary \
-		mapple/userland/tools/launchd-add.py mapple/loader/mtk/tools/mkilifw.py device/realme/spaced/device.conf)
+		mapple/userland/tools/launchd-add.py mapple/loader/mtk/tools/mkilifw.py device/realme/spaced/device.conf \
+		device/realme/spaced/adt.py)
 	# For the cross-platform assembler: the ADT and the payload with /product's Apple properties left out (it puts
 	# the IPSW's back in), and the pins of the IPSW members it reads
 	ipsw=$top/out/ipsw/$(basename "$(conf ipsw_url "$top/vendor/mapple/config/common.conf")")
@@ -94,7 +96,9 @@ mapple_app_sha256	$(sha "$A/mapple-app.tar")"
 	d=$(mktemp -d)
 	python3 "$top/build/mapple/tools/extract-dt.py" "$ipsw" "$d/d22ap.adt" >/dev/null
 	# shellcheck disable=SC2046
-	D22AP_ADT=$d/d22ap.adt python3 "$top/build/mapple/tools/mkadt.py" "$d/full.adt" $(conf adt "$top/device/realme/spaced/device.conf") >/dev/null
+	D22AP_ADT=$d/d22ap.adt python3 "$top/build/mapple/tools/mkadt.py" "$d/full.adt" \
+		--soc="$top/build/mapple/tools/soc/$(conf soc "$top/device/realme/spaced/device.conf").py" \
+		--device="$top/device/realme/spaced/adt.py" $(conf adt "$top/device/realme/spaced/device.conf") >/dev/null
 	python3 - "$top/build/mapple/tools" "$d/d22ap.adt" "$d/full.adt" "$A/adt.template" <<'EOF2'
 import sys
 sys.path.insert(0, sys.argv[1])
@@ -230,7 +234,8 @@ tar -tvf "$A/root-overlay.tar" | awk '$1 ~ /^-.....[sS]/ {print $NF}' | while re
 echo "device tree and payload"
 python3 "$BM/tools/extract-dt.py" "$ipsw" "$W/d22ap.adt" >/dev/null
 # shellcheck disable=SC2046
-D22AP_ADT=$W/d22ap.adt python3 "$BM/tools/mkadt.py" "$W/spaced.adt" $(field adt) >/dev/null
+D22AP_ADT=$W/d22ap.adt python3 "$BM/tools/mkadt.py" "$W/spaced.adt" --soc="$BM/tools/soc/$(conf soc "$T/device/realme/spaced/device.conf").py" \
+	--device="$T/device/realme/spaced/adt.py" $(field adt) >/dev/null
 python3 "$BM/tools/mkpayload.py" "$A/kernel" "$W/spaced.adt" "$W/xnu.bin" --cmdline "$(field cmdline)" >/dev/null
 [ "$(stat -f %z "$W/xnu.bin")" -lt $(($(field payload_max))) ] || { echo "the payload is too big" >&2; exit 1; }
 set -- shim="$A/shim.Image"
